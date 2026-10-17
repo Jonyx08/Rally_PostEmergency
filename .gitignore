@@ -1,0 +1,19 @@
+# Dependencias
+node_modules/
+
+# Builds
+dist/
+build/
+.angular/
+coverage/
+
+# Entorno y secretos
+.env
+.env.*
+!.env.example
+
+# Editores / sistema
+.vscode/
+.idea/
+.DS_Store
+*.log
