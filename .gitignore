@@ -15,5 +15,6 @@ coverage/
 
 # Editores / sistema
 .idea/
+.vscode/
 .DS_Store
 *.log
