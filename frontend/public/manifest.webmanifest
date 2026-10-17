@@ -1,9 +1,12 @@
 {
-  "name": "frontend",
-  "short_name": "frontend",
-  "display": "standalone",
-  "scope": "./",
+  "name": "REDIAL 09 - Triaje Offline Post-Emergencia",
+  "short_name": "Triaje Offline",
+  "description": "App PWA offline-first para reporte de incidentes y mulas de datos ante desastres",
   "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f141c",
+  "theme_color": "#dc2626",
   "icons": [
     {
       "src": "icons/icon-72x72.png",
