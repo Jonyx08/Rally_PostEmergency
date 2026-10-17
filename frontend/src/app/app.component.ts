@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -54,6 +54,8 @@ export class App implements OnInit {
   } | null>(null);
 
   // Configuración de red y COE (Modo Patrulla)
+  /** Raíz del backend (sin /api), para los enlaces al tablero del COE. */
+  readonly urlBackendBase = computed(() => this.reporteService.apiUrl().replace(/\/api\/?$/, ''));
   readonly apiUrlInput = signal<string>(this.reporteService.apiUrl());
   readonly collectorIdInput = signal<string>(this.reporteService.collectorId());
   readonly resumenCoe = signal<ResumenIncidentes | null>(null);

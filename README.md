@@ -4,7 +4,7 @@ Prototipo del equipo UNIVO para el **Rally Latinoamericano de Innovación 2026 �
 
 ![Tablero del COE con incidentes priorizados sobre San Miguel](docs/img/tablero-coe.png)
 
-> **Estado:** Backend (NestJS + PostGIS + triaje), simulador de mulas, tablero del COE y la **PWA en Angular con funcionamiento 100% offline** (`frontend/`) están **completos y funcionando**. Consume la API documentada en [docs/API.md](docs/API.md).
+> **Estado:** el backend (API + base de datos geoespacial + triaje), la PWA del ciudadano y de las mulas de datos en Angular, el simulador y un tablero mínimo del COE **funcionan de punta a punta**. El backend está desplegado en Railway: **https://backend-production-0e878.up.railway.app/** (tablero del COE) y `/api/docs` (Swagger).
 
 ---
 
@@ -19,11 +19,8 @@ Prototipo del equipo UNIVO para el **Rally Latinoamericano de Innovación 2026 �
 7. [Estructura del repositorio](#7-estructura-del-repositorio)
 8. [API](#8-api)
 9. [Tests](#9-tests)
-10. [Guion de la demo](#10-guion-de-la-demo)
-11. [Reparto del trabajo](#11-reparto-del-trabajo)
-12. [Preguntas abiertas y limitaciones](#12-preguntas-abiertas-y-limitaciones)
-13. [Problemas comunes](#13-problemas-comunes)
-14. [Glosario](#14-glosario)
+10. [Problemas comunes](#10-problemas-comunes)
+11. [Glosario](#11-glosario)
 
 ---
 
@@ -59,12 +56,12 @@ flowchart LR
 |---|---|---|
 | Backend con sincronización por lotes idempotente | ✅ Hecho | `backend/` — NestJS + Prisma |
 | Clustering espacial y priorización | ✅ Hecho | PostGIS (`ST_ClusterDBSCAN`, `ST_Intersects`) |
-| Simulador de mulas de datos | ✅ Hecho | `simulator/` — cientos de reportes en lotes, con duplicados entre patrullas |
+| Simulador de mulas de datos | ✅ Hecho | `simulador/` — cientos de reportes en lotes, con duplicados entre patrullas |
 | Tablero del COE (mapa + lista priorizada) | ✅ Hecho (mínimo) | `backend/public/index.html`, servido en `http://localhost:3000/` |
-| App del ciudadano y recolector (offline PWA) | ✅ Hecho | `frontend/` — Angular PWA con Service Worker, cola local y sync |
+| App del ciudadano y de la mula de datos (reporte offline + sincronización) | ✅ Hecho | `frontend/` — PWA en Angular con service worker, cola local y sincronización automática al volver la conexión |
 | Transferencia teléfono → teléfono por BLE / Wi-Fi Direct | ❌ Visión | La **simula** el simulador. Desde un navegador no se puede emitir BLE |
 | Mapas reales de susceptibilidad del MARN | ⚠️ Pendiente | Por ahora, 4 zonas **ficticias**, marcadas así en el mapa |
-| Heartbeat de patrullas | ⚠️ Sin implementar | Ver [Preguntas abiertas](#12-preguntas-abiertas-y-limitaciones) |
+| Heartbeat de patrullas | ⚠️ Sin implementar | Ver [docs/PREGUNTAS_ABIERTAS.md](docs/PREGUNTAS_ABIERTAS.md) |
 
 **Por qué la parte BLE es solo visión:** emitir balizas BLE, escanear en segundo plano y usar Wi-Fi Direct son APIs nativas de Android. Una PWA no puede hacerlo (Web Bluetooth no emite anuncios ni escanea en segundo plano, y no existe en Safari de iPhone). En la demo, el simulador representa el viaje del reporte en la patrulla.
 
@@ -72,18 +69,18 @@ flowchart LR
 
 ### Requisitos
 
-- **Node.js 20 o superior** y **pnpm** (`npm install -g pnpm`)
+- **Node.js 22 o superior** y **pnpm 12** (`npm install -g pnpm`)
 - **Docker** con Docker Compose (para PostgreSQL + PostGIS)
 
 ### Pasos
 
 ```bash
-# 1. Base de datos (PostgreSQL 16 + PostGIS 3.4 en el puerto 5432)
-cd backend
-cp .env.example .env
-docker compose up -d db
+# 1. Base de datos (PostgreSQL 15 + PostGIS 3.4 en el puerto 5432), desde la raíz del repo
+docker compose up -d db-postgis
 
 # 2. Dependencias, cliente de Prisma, tablas y zonas de riesgo de ejemplo
+cd backend
+cp .env.example .env
 pnpm install
 pnpm prisma:generate
 pnpm db:migrate
@@ -93,24 +90,28 @@ pnpm db:seed
 pnpm start:dev
 ```
 
-# 4. Frontend PWA en Angular (en otra terminal)
-cd frontend
-pnpm install
-pnpm start
-```
-
 En otra terminal, desde la raíz del repo:
 
 ```bash
-# 5. Simular 3 patrullas que llegan con ~200 reportes (vacía el tablero antes)
-node simulator/simular.mjs --reset
+# 4. Simular 3 patrullas que llegan con ~200 reportes (vacía el tablero antes)
+node simulador/simular.mjs --reset
 ```
+
+Y para el frontend Angular (otra terminal):
+
+```bash
+cd frontend
+pnpm install
+pnpm start        # http://localhost:4200
+```
+
+En `localhost` la PWA usa el backend local (`http://localhost:3000/api`); desplegada en otro dominio, usa el de Railway. Se puede cambiar desde la pestaña de configuración de red de la propia app.
 
 Luego abre:
 
 | URL | Qué es |
 |---|---|
-| http://localhost:4200/ | App PWA del ciudadano / mula de datos (offline-first) |
+| http://localhost:4200/ | PWA del ciudadano / mula de datos |
 | http://localhost:3000/ | Tablero del COE |
 | http://localhost:3000/api/docs | Swagger: todos los endpoints, se pueden probar desde el navegador |
 | http://localhost:3000/api/health | Debe responder `{"api":"ok","db":"ok",...}` |
@@ -118,7 +119,7 @@ Luego abre:
 ### Opciones del simulador
 
 ```bash
-node simulator/simular.mjs --mulas 5 --focos 10 --aislados 20 --pausa 3000 --semilla 2026 --reset
+node simulador/simular.mjs --mulas 5 --focos 10 --aislados 20 --pausa 3000 --semilla 2026 --reset
 ```
 
 | Opción | Por defecto | Qué hace |
@@ -136,8 +137,8 @@ node simulator/simular.mjs --mulas 5 --focos 10 --aislados 20 --pausa 3000 --sem
 ```mermaid
 flowchart TB
     subgraph Clientes
-        PWA["PWA ciudadano (Angular)<br/>⏳ pendiente"]
-        Sim["Simulador de mulas<br/>simulator/simular.mjs"]
+        PWA["PWA ciudadano<br/>frontend/ (Angular)"]
+        Sim["Simulador de mulas<br/>simulador/simular.mjs"]
         Dash["Tablero COE<br/>backend/public/index.html"]
     end
     subgraph Backend["backend/ (NestJS)"]
@@ -222,8 +223,8 @@ En cada sincronización se recalculan **todos** los incidentes. Con ~200 reporte
 │   ├── API.md                  ← contrato de la API (lo que consume el frontend)
 │   ├── PREGUNTAS_ABIERTAS.md   ← decisiones pendientes y preguntas del jurado
 │   └── img/
+├── docker-compose.yml          ← PostgreSQL 15 + PostGIS 3.4
 ├── backend/                    ← NestJS + Prisma + PostGIS
-│   ├── docker-compose.yml      ← PostgreSQL 16 + PostGIS
 │   ├── .env.example
 │   ├── prisma/
 │   │   ├── schema.prisma       ← tablas: reportes, incidentes, zonas_riesgo
@@ -240,8 +241,12 @@ En cada sincronización se recalculan **todos** los incidentes. Con ~200 reporte
 │   │   ├── health/
 │   │   └── demo/               ← vaciar datos antes de la demo
 │   └── test/                   ← tests unitarios y de integración
-├── simulator/simular.mjs       ← mulas de datos (Node, sin dependencias)
-└── frontend/                   ← (pendiente) PWA en Angular
+├── simulador/simular.mjs       ← mulas de datos (Node, sin dependencias)
+└── frontend/                   ← PWA en Angular (service worker + cola offline)
+    └── src/app/
+        ├── services/reporte.service.ts  ← cola local, detección de conexión y sync
+        ├── models/reporte.model.ts      ← tipos del contrato de la API
+        └── app.component.*              ← pantallas: reportar, mis reportes, mula, COE
 ```
 
 ### Notas sobre Prisma + PostGIS
@@ -267,7 +272,7 @@ Detalle completo con ejemplos en **[docs/API.md](docs/API.md)**, y documentació
 | `GET` | `/api/health` | Estado de la API, la base y PostGIS |
 | `DELETE` | `/api/demo/datos` | Vaciar el tablero (solo con `DEMO_PERMITIR_RESET=true`) |
 
-**Para el frontend Angular:** levanta el backend con los pasos de la sección 4 y apunta la app a `http://localhost:3000/api`. CORS ya permite `http://localhost:4200`.
+**Frontend:** la PWA consume esta API desde `frontend/src/app/services/reporte.service.ts`. CORS permite `http://localhost:4200` (el puerto de `pnpm start`); si la PWA se despliega en otro dominio, hay que agregarlo a `CORS_ORIGINS`.
 
 ## 9. Tests
 
@@ -282,58 +287,26 @@ Los **tests de integración** prueban contra PostGIS real: idempotencia del sync
 
 ```bash
 cd backend
-docker compose exec db psql -U triaje -c "CREATE DATABASE triaje_test"
-DATABASE_URL="postgresql://triaje:triaje@localhost:5432/triaje_test" pnpm db:migrate
-TEST_DATABASE_URL="postgresql://triaje:triaje@localhost:5432/triaje_test" pnpm test
+docker compose -f ../docker-compose.yml exec db-postgis psql -U postgres -c "CREATE DATABASE triajedb_test"
+DATABASE_URL="postgresql://postgres:rallypassword123@localhost:5432/triajedb_test" pnpm db:migrate
+TEST_DATABASE_URL="postgresql://postgres:rallypassword123@localhost:5432/triajedb_test" pnpm test
 ```
 
 Sin `TEST_DATABASE_URL`, los tests de integración se saltan automáticamente.
 
-## 10. Guion de la demo
-
-1. Antes de empezar: backend corriendo y `curl -X DELETE http://localhost:3000/api/demo/datos` para dejar el tablero vacío. Abrir `http://localhost:3000/`.
-2. *(Cuando exista la PWA)* En un teléfono en modo avión se crean 2–3 reportes: quedan guardados offline. Se reactiva la conexión y aparecen en el tablero.
-3. Correr `node simulator/simular.mjs --pausa 4000`: "llegan" 3 patrullas, una cada 4 segundos, con unos 200 reportes en total, muchos repetidos entre patrullas.
-4. En el tablero, cientos de puntos se convierten en **unos pocos incidentes priorizados**. Los de zona roja o con personas atrapadas quedan arriba, con la barra que explica por qué.
-5. Señalar en la consola del simulador la línea del **reenvío**: 0 nuevos, todos duplicados. Eso demuestra la idempotencia.
-6. Marcar un incidente como `ASIGNADO` desde el tablero y mostrar que no se pierde aunque sigan llegando reportes.
-7. Cierre: explicar la visión de la Fase A (BLE entre teléfonos) como siguiente paso.
-
-## 11. Reparto del trabajo
-
-| Área | Responsable | Estado |
-|---|---|---|
-| Backend + base de datos + triaje | Julio | ✅ Funcionando |
-| Simulador de mulas | Julio | ✅ Funcionando |
-| Tablero del COE | — | ✅ Versión mínima en HTML; se puede rehacer en Angular |
-| PWA del ciudadano y recolector (Angular) | Equipo Frontend | ✅ Funcionando (`frontend/`) |
-| Presentación / pitch | _por asignar_ | ⏳ Pendiente |
-
-**Regla para no bloquearnos:** el frontend trabaja contra [docs/API.md](docs/API.md). Si alguien necesita cambiar el contrato, lo cambia en un PR junto con el código y avisa.
-
-## 12. Preguntas abiertas y limitaciones
-
-Detalle y respuestas sugeridas para el jurado en **[docs/PREGUNTAS_ABIERTAS.md](docs/PREGUNTAS_ABIERTAS.md)**.
-
-- **Heartbeat de patrullas:** no está implementado. Tal como estaba propuesto, marcaría como "colapso" a cualquier patrulla que entre a una zona sin señal, que es justo lo que hacen.
-- **Zonas de riesgo ficticias:** hay que reemplazarlas por los mapas del MARN si se consiguen. Se cargan en `prisma/seed.ts`.
-- **Sin autenticación:** cualquiera que alcance la API puede enviar reportes. Es aceptable para la demo, no para producción.
-- **Recalculo completo** en cada sync (ver 6.4).
-- **El tablero necesita internet** para los mapas base de OpenStreetMap. El COE sí tiene conexión; los reportes y el triaje no dependen de eso.
-
-## 13. Problemas comunes
+## 10. Problemas comunes
 
 | Síntoma | Causa probable / solución |
 |---|---|
-| `docker compose up` falla con "port 5432 already in use" | Hay otro PostgreSQL local. Detenlo, o cambia el puerto en `docker-compose.yml` (por ejemplo `"5433:5432"`) y en `DATABASE_URL` |
+| `docker compose up` falla con "port 5432 already in use" | Hay otro PostgreSQL local. Detenlo, o cambia el puerto en el `docker-compose.yml` de la raíz (por ejemplo `"5433:5432"`) y en `DATABASE_URL` de `backend/.env` |
 | `@prisma/client did not initialize yet` | Falta `pnpm prisma:generate` |
 | `relation "reportes" does not exist` | Falta `pnpm db:migrate` |
 | El tablero dice "Sin conexión con la API" | El backend no está corriendo, o está en otro puerto |
 | `/api/zonas-riesgo` devuelve una lista vacía | Falta `pnpm db:seed` |
 | `DELETE /api/demo/datos` responde 403 | Falta `DEMO_PERMITIR_RESET=true` en `backend/.env` |
-| pnpm pregunta por "approve-builds" | Ejecuta `pnpm prisma:generate`: genera el cliente aunque se hayan omitido los scripts de instalación |
+| pnpm falla con `ERR_PNPM_IGNORED_BUILDS` | Una dependencia nueva quiere ejecutar scripts. Agrégala en `allowBuilds` del `pnpm-workspace.yaml` de esa carpeta (`true` o `false`) |
 
-## 14. Glosario
+## 11. Glosario
 
 | Término | Significado |
 |---|---|

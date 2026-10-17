@@ -1,4 +1,4 @@
-# Dependencias
+# Dependencias (nunca se suben: se instalan con pnpm install)
 node_modules/
 
 # Builds
@@ -6,6 +6,7 @@ dist/
 build/
 .angular/
 coverage/
+*.tsbuildinfo
 
 # Entorno y secretos
 .env
@@ -13,10 +14,6 @@ coverage/
 !.env.example
 
 # Editores / sistema
-.vscode/
 .idea/
 .DS_Store
 *.log
-
-# TypeScript incremental
-*.tsbuildinfo

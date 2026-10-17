@@ -820,7 +820,7 @@
 
             <div class="coe-links-bar">
               <a
-                href="http://localhost:3000/"
+                [href]="urlBackendBase() + '/'"
                 target="_blank"
                 rel="noopener"
                 class="btn-external"
@@ -828,7 +828,7 @@
                 Abrir Tablero Cartográfico del COE ↗
               </a>
               <a
-                href="http://localhost:3000/api/docs"
+                [href]="reporteService.apiUrl() + '/docs'"
                 target="_blank"
                 rel="noopener"
                 class="btn-external"

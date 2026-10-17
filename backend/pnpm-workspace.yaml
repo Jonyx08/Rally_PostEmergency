@@ -1,5 +1,12 @@
+# Dependencias a las que pnpm les permite ejecutar scripts de instalación.
+# Prisma necesita los suyos para descargar el motor y generar el cliente.
 allowBuilds:
+  '@nestjs/core': true
   '@prisma/client': true
   '@prisma/engines': true
-  '@scarf/scarf': true
   prisma: true
+  esbuild: true
+  '@parcel/watcher': false
+  unrs-resolver: false
+  workerd: false
+  '@scarf/scarf': false

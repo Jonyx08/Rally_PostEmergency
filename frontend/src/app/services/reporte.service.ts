@@ -17,6 +17,9 @@ const STORAGE_KEY_API_URL = 'redial_api_url';
 const STORAGE_KEY_COLLECTOR = 'redial_collector_id';
 const STORAGE_KEY_MODO = 'redial_app_modo';
 
+// Backend desplegado en Railway (se usa cuando la PWA no corre en localhost)
+export const API_URL_PRODUCCION = 'https://backend-production-0e878.up.railway.app/api';
+
 // Coordenadas de referencia para pruebas en San Miguel, El Salvador
 export const PRESETS_SAN_MIGUEL = [
   {
@@ -107,8 +110,12 @@ export class ReporteService {
   }
 
   private obtenerApiUrlInicial(): string {
-    if (typeof localStorage === 'undefined') return 'http://localhost:3000/api';
-    return localStorage.getItem(STORAGE_KEY_API_URL) || 'http://localhost:3000/api';
+    // En desarrollo (localhost) se usa el backend local; desplegada, el de Railway.
+    // Siempre se puede cambiar desde la pantalla de configuración de red.
+    const local = typeof location === 'undefined' || ['localhost', '127.0.0.1'].includes(location.hostname);
+    const porDefecto = local ? 'http://localhost:3000/api' : API_URL_PRODUCCION;
+    if (typeof localStorage === 'undefined') return porDefecto;
+    return localStorage.getItem(STORAGE_KEY_API_URL) || porDefecto;
   }
 
   private obtenerModoInicial(): 'CIUDADANO' | 'RECOLECTOR' {
