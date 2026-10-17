@@ -1,0 +1,19 @@
+# Dependencias (nunca se suben: se instalan con pnpm install)
+node_modules/
+
+# Builds
+dist/
+build/
+.angular/
+coverage/
+*.tsbuildinfo
+
+# Entorno y secretos
+.env
+.env.*
+!.env.example
+
+# Editores / sistema
+.idea/
+.DS_Store
+*.log
