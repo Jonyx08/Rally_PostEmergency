@@ -17,3 +17,6 @@ coverage/
 .idea/
 .DS_Store
 *.log
+
+# TypeScript incremental
+*.tsbuildinfo
