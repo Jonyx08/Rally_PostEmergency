@@ -16,13 +16,13 @@ Lo que el equipo todavía no ha decidido, y lo que el jurado probablemente va a 
 ¿Existen públicamente en un formato usable (GeoJSON o shapefile)? Mientras tanto, el seed carga 4 zonas ficticias alrededor de San Miguel, **marcadas como FICTICIAS** en el mapa. Si se consiguen los datos reales, se reemplazan en `backend/prisma/seed.ts`.
 
 ### 3. Responsables
-Falta confirmar quién termina la PWA del ciudadano (Angular) y quién hace la presentación. El backend, el simulador y un tablero mínimo ya existen.
+Falta confirmar quién hace la presentación. El backend, la PWA, el simulador y un tablero mínimo ya existen.
 
 ### 4. ¿Hay IA en el producto?
 Ni la propuesta del Notion ni el documento técnico mencionan un componente de IA dentro de la app. Confirmar si se descarta o qué haría.
 
 ### 5. Tablero del COE: ¿se queda en HTML o se rehace en Angular?
-Ya existe una versión mínima en `backend/public/index.html` que funciona. Rehacerlo en Angular unifica el frontend, pero le quita tiempo a la PWA del ciudadano, que todavía no tiene pantallas. Recomendación: dejar el tablero como está y concentrar Angular en la PWA.
+Ya existe una versión mínima en `backend/public/index.html` que funciona. Rehacerlo en Angular unifica el frontend, pero ahora mismo no es prioritario: el tablero actual funciona. Recomendación: dejarlo como está para la entrega.
 
 ### 6. Pesos de la prioridad
 Los pesos de `backend/src/config.ts` son una propuesta razonada, no validada. Si alguien del equipo tiene contacto con Protección Civil o con cuerpos de socorro, vale la pena preguntarles qué pesa más.

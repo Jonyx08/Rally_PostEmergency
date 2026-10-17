@@ -4,7 +4,7 @@ Prototipo del equipo UNIVO para el **Rally Latinoamericano de Innovación 2026 �
 
 ![Tablero del COE con incidentes priorizados sobre San Miguel](docs/img/tablero-coe.png)
 
-> **Estado:** el backend (API + base de datos geoespacial + triaje), el simulador de mulas de datos y un tablero mínimo del COE **ya funcionan**. El frontend en Angular ya está configurado como PWA (service worker y manifest); falta construir sus pantallas contra esta misma API ([docs/API.md](docs/API.md)).
+> **Estado:** el backend (API + base de datos geoespacial + triaje), la PWA del ciudadano y de las mulas de datos en Angular, el simulador y un tablero mínimo del COE **funcionan de punta a punta**. El backend está desplegado en Railway: **https://backend-production-0e878.up.railway.app/** (tablero del COE) y `/api/docs` (Swagger).
 
 ---
 
@@ -58,7 +58,7 @@ flowchart LR
 | Clustering espacial y priorización | ✅ Hecho | PostGIS (`ST_ClusterDBSCAN`, `ST_Intersects`) |
 | Simulador de mulas de datos | ✅ Hecho | `simulador/` — cientos de reportes en lotes, con duplicados entre patrullas |
 | Tablero del COE (mapa + lista priorizada) | ✅ Hecho (mínimo) | `backend/public/index.html`, servido en `http://localhost:3000/` |
-| App del ciudadano (crear reporte offline y sincronizar) | 🚧 En progreso | `frontend/`: Angular ya configurado como PWA; faltan las pantallas |
+| App del ciudadano y de la mula de datos (reporte offline + sincronización) | ✅ Hecho | `frontend/` — PWA en Angular con service worker, cola local y sincronización automática al volver la conexión |
 | Transferencia teléfono → teléfono por BLE / Wi-Fi Direct | ❌ Visión | La **simula** el simulador. Desde un navegador no se puede emitir BLE |
 | Mapas reales de susceptibilidad del MARN | ⚠️ Pendiente | Por ahora, 4 zonas **ficticias**, marcadas así en el mapa |
 | Heartbeat de patrullas | ⚠️ Sin implementar | Ver [docs/PREGUNTAS_ABIERTAS.md](docs/PREGUNTAS_ABIERTAS.md) |
@@ -69,7 +69,7 @@ flowchart LR
 
 ### Requisitos
 
-- **Node.js 22.22.3+ o 24.15+** (lo pide Angular 22) y **pnpm 12** (`npm install -g pnpm`)
+- **Node.js 22 o superior** y **pnpm 12** (`npm install -g pnpm`)
 - **Docker** con Docker Compose (para PostgreSQL + PostGIS)
 
 ### Pasos
@@ -105,10 +105,13 @@ pnpm install
 pnpm start        # http://localhost:4200
 ```
 
+En `localhost` la PWA usa el backend local (`http://localhost:3000/api`); desplegada en otro dominio, usa el de Railway. Se puede cambiar desde la pestaña de configuración de red de la propia app.
+
 Luego abre:
 
 | URL | Qué es |
 |---|---|
+| http://localhost:4200/ | PWA del ciudadano / mula de datos |
 | http://localhost:3000/ | Tablero del COE |
 | http://localhost:3000/api/docs | Swagger: todos los endpoints, se pueden probar desde el navegador |
 | http://localhost:3000/api/health | Debe responder `{"api":"ok","db":"ok",...}` |
@@ -239,7 +242,11 @@ En cada sincronización se recalculan **todos** los incidentes. Con ~200 reporte
 │   │   └── demo/               ← vaciar datos antes de la demo
 │   └── test/                   ← tests unitarios y de integración
 ├── simulador/simular.mjs       ← mulas de datos (Node, sin dependencias)
-└── frontend/                   ← PWA en Angular 22 (service worker + manifest)
+└── frontend/                   ← PWA en Angular (service worker + cola offline)
+    └── src/app/
+        ├── services/reporte.service.ts  ← cola local, detección de conexión y sync
+        ├── models/reporte.model.ts      ← tipos del contrato de la API
+        └── app.component.*              ← pantallas: reportar, mis reportes, mula, COE
 ```
 
 ### Notas sobre Prisma + PostGIS
@@ -265,7 +272,7 @@ Detalle completo con ejemplos en **[docs/API.md](docs/API.md)**, y documentació
 | `GET` | `/api/health` | Estado de la API, la base y PostGIS |
 | `DELETE` | `/api/demo/datos` | Vaciar el tablero (solo con `DEMO_PERMITIR_RESET=true`) |
 
-**Para el frontend Angular:** levanta el backend con los pasos de la sección 4 y apunta la app a `http://localhost:3000/api`. CORS ya permite `http://localhost:4200`, el puerto de `pnpm start` en `frontend/`.
+**Frontend:** la PWA consume esta API desde `frontend/src/app/services/reporte.service.ts`. CORS permite `http://localhost:4200` (el puerto de `pnpm start`); si la PWA se despliega en otro dominio, hay que agregarlo a `CORS_ORIGINS`.
 
 ## 9. Tests
 
