@@ -4,7 +4,13 @@ Prototipo del equipo UNIVO para el **Rally Latinoamericano de Innovación 2026 �
 
 ![Tablero del COE con incidentes priorizados sobre San Miguel](docs/img/tablero-coe.png)
 
-> **Estado:** el backend (API + base de datos geoespacial + triaje), la PWA del ciudadano y de las mulas de datos en Angular, el simulador y un tablero mínimo del COE **funcionan de punta a punta**. El backend está desplegado en Railway: **https://backend-production-0e878.up.railway.app/** (tablero del COE) y `/api/docs` (Swagger).
+> **Estado:** el backend (API + base de datos geoespacial + triaje), la PWA del ciudadano y de las mulas de datos en Angular, el simulador y un tablero mínimo del COE **funcionan de punta a punta**. Está desplegado en Railway:
+
+| Qué | URL |
+|---|---|
+| PWA del ciudadano / mula de datos | https://frontend-production-4924.up.railway.app/ |
+| Tablero del COE | https://backend-production-0e878.up.railway.app/ |
+| API (Swagger) | https://backend-production-0e878.up.railway.app/api/docs |
 
 ---
 
