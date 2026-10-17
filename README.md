@@ -327,3 +327,5 @@ Sin `TEST_DATABASE_URL`, los tests de integración se saltan automáticamente.
 | **PWA** | *Progressive Web App*: app web instalable que puede funcionar offline |
 | **BLE** | *Bluetooth Low Energy* |
 | **MARN** | Ministerio de Medio Ambiente y Recursos Naturales de El Salvador |
+
+
