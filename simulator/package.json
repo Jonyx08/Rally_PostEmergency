@@ -1,0 +1,12 @@
+{
+  "name": "simulador-mulas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Simula patrullas (mulas de datos) que suben lotes de reportes al backend",
+  "type": "module",
+  "scripts": {
+    "simular": "node simular.mjs",
+    "demo": "node simular.mjs --reset --semilla 2026"
+  },
+  "engines": { "node": ">=18" }
+}
