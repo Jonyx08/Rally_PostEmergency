@@ -1,3 +1,10 @@
+// Esquema de la base de datos de triaje.
+//
+// Prisma no entiende los tipos de PostGIS, así que las columnas espaciales se
+// declaran como Unsupported(...). Prisma las crea en las migraciones, pero no
+// se pueden leer ni escribir con el cliente normal: todo lo espacial se hace
+// con SQL crudo ($queryRaw / $executeRaw). Ver src/triaje y src/reportes.
+
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
@@ -9,20 +16,96 @@ datasource db {
   extensions = [postgis]
 }
 
-model Reporte {
-  id                String   @id // El UUID lo genera el frontend (clave de idempotencia)
-  deviceId          String   // Teléfono del ciudadano
-  createdAt         DateTime // Cuándo se creó en el teléfono offline
-  latitud           Float
-  longitud          Float
-  geom              Unsupported("geometry(Point, 4326)")? // Para el triaje espacial
-  tipo              String   // DERRUMBE, INUNDACION, etc.
-  heridos           Int
-  personasAtrapadas Boolean
-  descripcion       String?
-  estado            String   @default("NUEVO")
-  collectorId       String?  // El ID de la mula/patrulla (puede ser null)
-  recibidoEn        DateTime @default(now()) // Cuándo llegó al servidor
+enum TipoEmergencia {
+  DERRUMBE
+  INUNDACION
+  INCENDIO
+  PERSONA_ATRAPADA
+  HERIDOS
+  OTRO
+}
 
-  @@index([geom], type: Gist)
+enum EstadoIncidente {
+  NUEVO
+  ASIGNADO
+  ATENDIDO
+}
+
+enum NivelPrioridad {
+  CRITICA
+  ALTA
+  MEDIA
+  BAJA
+}
+
+enum NivelRiesgo {
+  ROJO
+  NARANJA
+  AMARILLO
+}
+
+/// Reporte individual creado por un ciudadano en su teléfono.
+model Reporte {
+  /// UUID generado en el teléfono: clave de idempotencia del sync.
+  id                String         @id @db.Uuid
+  deviceId          String         @map("device_id")
+  /// Momento en que se creó en el teléfono.
+  creadoEn          DateTime       @map("creado_en") @db.Timestamptz(3)
+  /// Momento en que llegó al servidor.
+  recibidoEn        DateTime       @default(now()) @map("recibido_en") @db.Timestamptz(3)
+  lat               Float
+  lng               Float
+  /// Punto en SRID 4326 (se llena con SQL crudo a partir de lat/lng).
+  ubicacion         Unsupported("geometry(Point, 4326)")?
+  tipo              TipoEmergencia
+  heridos           Int
+  personasAtrapadas Boolean        @map("personas_atrapadas")
+  descripcion       String?        @db.VarChar(280)
+  /// Mula (patrulla) que trajo el reporte; null si lo sincronizó el propio teléfono.
+  collectorId       String?        @map("collector_id")
+  incidenteId       String?        @map("incidente_id") @db.Uuid
+  incidente         Incidente?     @relation(fields: [incidenteId], references: [id], onDelete: SetNull)
+
+  @@index([ubicacion], type: Gist)
+  @@index([incidenteId])
+  @@map("reportes")
+}
+
+/// "Incidente Maestro": grupo de reportes cercanos tratados como uno solo.
+model Incidente {
+  id                String          @id @default(uuid()) @db.Uuid
+  lat               Float
+  lng               Float
+  radioMetros       Float           @map("radio_metros")
+  cantidadReportes  Int             @map("cantidad_reportes")
+  /// Máximo de heridos que reportó una sola persona. No se suman: varios vecinos
+  /// que reportan el mismo incidente describen a los mismos heridos.
+  heridosEstimados  Int             @map("heridos_estimados")
+  hayAtrapados      Boolean         @map("hay_atrapados")
+  tipoPrincipal     TipoEmergencia  @map("tipo_principal")
+  prioridad         Int
+  nivelPrioridad    NivelPrioridad  @map("nivel_prioridad")
+  /// Cuántos puntos aportó cada factor al puntaje (para explicar el "por qué").
+  desglosePrioridad Json            @map("desglose_prioridad")
+  zonaRiesgoId      String?         @map("zona_riesgo_id")
+  zonaRiesgo        ZonaRiesgo?     @relation(fields: [zonaRiesgoId], references: [id], onDelete: SetNull)
+  estado            EstadoIncidente @default(NUEVO)
+  creadoEn          DateTime        @default(now()) @map("creado_en") @db.Timestamptz(3)
+  actualizadoEn     DateTime        @updatedAt @map("actualizado_en") @db.Timestamptz(3)
+  reportes          Reporte[]
+
+  @@index([prioridad])
+  @@map("incidentes")
+}
+
+/// Zona de susceptibilidad (deslave, inundación...). En la demo son FICTICIAS.
+model ZonaRiesgo {
+  id         String                               @id
+  nombre     String
+  nivel      NivelRiesgo
+  area       Unsupported("geometry(Polygon, 4326)")
+  incidentes Incidente[]
+
+  @@index([area], type: Gist)
+  @@map("zonas_riesgo")
 }

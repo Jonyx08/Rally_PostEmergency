@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tablero COE · Triaje post-emergencia</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --fondo: #f4f5f7;
+      --panel: #ffffff;
+      --texto: #1c2430;
+      --suave: #5d6875;
+      --borde: #dde1e6;
+      --critica: #c62828;
+      --alta: #ef6c00;
+      --media: #f9a825;
+      --baja: #2e7d32;
+      --acento: #1f5fae;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fondo: #12161c;
+        --panel: #1b2129;
+        --texto: #e6e9ed;
+        --suave: #9aa4af;
+        --borde: #2c343e;
+        --acento: #6fa8ff;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--fondo);
+      color: var(--texto);
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+    header {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px;
+      padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--borde);
+    }
+    header h1 { font-size: 16px; margin: 0; font-weight: 650; }
+    header h1 small { color: var(--suave); font-weight: 400; margin-left: 6px; }
+    .cifras { display: flex; flex-wrap: wrap; gap: 8px; }
+    .cifra { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--borde); white-space: nowrap; }
+    .cifra b { font-variant-numeric: tabular-nums; }
+    .cifra.critica b { color: var(--critica); }
+    .cifra.alta b { color: var(--alta); }
+    .cifra.media b { color: var(--media); }
+    .cifra.baja b { color: var(--baja); }
+    #estado-conexion { margin-left: auto; color: var(--suave); font-size: 12px; }
+    #estado-conexion.error { color: var(--critica); }
+    main { display: grid; grid-template-columns: 1fr 400px; min-height: 0; }
+    #mapa { min-height: 300px; }
+    aside { background: var(--panel); border-left: 1px solid var(--borde); overflow-y: auto; }
+    .filtros { position: sticky; top: 0; background: var(--panel); padding: 10px 12px; border-bottom: 1px solid var(--borde); display: flex; gap: 6px; z-index: 1; }
+    .filtros button, .acciones button {
+      font: inherit; padding: 4px 10px; border-radius: 6px; cursor: pointer;
+      border: 1px solid var(--borde); background: transparent; color: var(--texto);
+    }
+    .filtros button[aria-pressed="true"] { background: var(--acento); border-color: var(--acento); color: #fff; }
+    ol { list-style: none; margin: 0; padding: 0; }
+    li.incidente { padding: 10px 12px 12px 14px; border-bottom: 1px solid var(--borde); border-left: 5px solid var(--color); cursor: pointer; }
+    li.incidente:hover, li.incidente.seleccionado { background: color-mix(in srgb, var(--color) 8%, transparent); }
+    .fila { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .titulo { font-weight: 650; }
+    .puntaje { font-size: 20px; font-weight: 700; color: var(--color); font-variant-numeric: tabular-nums; }
+    .meta { color: var(--suave); font-size: 12px; margin-top: 2px; }
+    .zona { display: inline-block; margin-top: 4px; font-size: 12px; padding: 1px 6px; border-radius: 4px; background: color-mix(in srgb, var(--color-zona) 18%, transparent); }
+    .desglose { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 8px 0 4px; background: var(--borde); }
+    .desglose span { display: block; height: 100%; }
+    .leyenda-desglose { font-size: 11px; color: var(--suave); display: flex; flex-wrap: wrap; gap: 2px 10px; }
+    .leyenda-desglose i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 3px; }
+    .acciones { margin-top: 8px; display: flex; gap: 6px; }
+    .acciones button.activo { background: var(--texto); color: var(--panel); border-color: var(--texto); }
+    .vacio { padding: 24px 16px; color: var(--suave); text-align: center; }
+    @media (max-width: 800px) {
+      main { grid-template-columns: 1fr; grid-template-rows: 50vh auto; }
+      aside { border-left: 0; border-top: 1px solid var(--borde); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Tablero COE <small>Triaje post-emergencia</small></h1>
+    <div class="cifras">
+      <span class="cifra">Reportes <b id="c-reportes">0</b></span>
+      <span class="cifra">Incidentes <b id="c-incidentes">0</b></span>
+      <span class="cifra critica">Crítica <b id="c-critica">0</b></span>
+      <span class="cifra alta">Alta <b id="c-alta">0</b></span>
+      <span class="cifra media">Media <b id="c-media">0</b></span>
+      <span class="cifra baja">Baja <b id="c-baja">0</b></span>
+    </div>
+    <span id="estado-conexion">Conectando…</span>
+  </header>
+  <main>
+    <div id="mapa"></div>
+    <aside>
+      <div class="filtros" role="group" aria-label="Filtrar por estado">
+        <button data-estado="" aria-pressed="true">Todos</button>
+        <button data-estado="NUEVO" aria-pressed="false">Nuevos</button>
+        <button data-estado="ASIGNADO" aria-pressed="false">Asignados</button>
+        <button data-estado="ATENDIDO" aria-pressed="false">Atendidos</button>
+      </div>
+      <ol id="lista"></ol>
+    </aside>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Tablero mínimo del COE. Consume la misma API que usará el frontend Angular.
+    const API = '/api';
+    const REFRESCO_MS = 3000;
+
+    const COLOR_NIVEL = { CRITICA: '#c62828', ALTA: '#ef6c00', MEDIA: '#f9a825', BAJA: '#2e7d32' };
+    const COLOR_ZONA = { ROJO: '#d32f2f', NARANJA: '#f57c00', AMARILLO: '#fbc02d' };
+    const NOMBRE_TIPO = {
+      DERRUMBE: 'Derrumbe', INUNDACION: 'Inundación', INCENDIO: 'Incendio',
+      PERSONA_ATRAPADA: 'Persona atrapada', HERIDOS: 'Heridos', OTRO: 'Otro',
+    };
+    const FACTORES = [
+      ['reportes', 'Reportes', '#5c6bc0'],
+      ['heridos', 'Heridos', '#ec407a'],
+      ['atrapados', 'Atrapados', '#8d6e63'],
+      ['tipo', 'Tipo', '#26a69a'],
+      ['zonaRiesgo', 'Zona de riesgo', '#ff7043'],
+    ];
+
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+    const mapa = L.map('mapa').setView([13.4833, -88.1833], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap',
+    }).addTo(mapa);
+
+    const capaZonas = L.geoJSON(null, {
+      style: (f) => ({ color: COLOR_ZONA[f.properties.nivel], weight: 1, fillOpacity: 0.15, dashArray: '4 4' }),
+      onEachFeature: (f, capa) => capa.bindTooltip(`${esc(f.properties.nombre)} · ${f.properties.nivel}`),
+    }).addTo(mapa);
+    const capaReportes = L.layerGroup().addTo(mapa);
+    const capaIncidentes = L.layerGroup().addTo(mapa);
+    L.control.layers(null, { 'Zonas de riesgo': capaZonas, 'Reportes individuales': capaReportes, Incidentes: capaIncidentes }).addTo(mapa);
+
+    let filtroEstado = '';
+    let seleccionado = null;
+    let marcadores = new Map();
+    let primeraCarga = true;
+
+    async function pedir(ruta, opciones) {
+      const r = await fetch(API + ruta, opciones);
+      if (!r.ok) throw new Error(`${r.status} ${ruta}`);
+      return r.json();
+    }
+
+    async function cargarZonas() {
+      capaZonas.clearLayers();
+      capaZonas.addData(await pedir('/zonas-riesgo'));
+    }
+
+    function pintarDesglose(d) {
+      const barras = FACTORES.map(([k, , c]) => `<span style="width:${d[k] ?? 0}%;background:${c}" title="${k}: ${d[k] ?? 0}"></span>`).join('');
+      const leyenda = FACTORES.filter(([k]) => d[k]).map(([k, n, c]) => `<span><i style="background:${c}"></i>${n} +${d[k]}</span>`).join('');
+      return `<div class="desglose">${barras}</div><div class="leyenda-desglose">${leyenda}</div>`;
+    }
+
+    function pintarLista(incidentes) {
+      const lista = document.getElementById('lista');
+      if (incidentes.length === 0) {
+        lista.innerHTML = `<li class="vacio">Sin incidentes${filtroEstado ? ' con este estado' : ''}.<br>Ejecuta el simulador o sincroniza reportes desde la PWA.</li>`;
+        return;
+      }
+      lista.innerHTML = incidentes.map((i, n) => `
+        <li class="incidente ${i.id === seleccionado ? 'seleccionado' : ''}" data-id="${i.id}" style="--color:${COLOR_NIVEL[i.nivelPrioridad]}">
+          <div class="fila">
+            <span class="titulo">#${n + 1} · ${esc(NOMBRE_TIPO[i.tipoPrincipal])}</span>
+            <span class="puntaje" title="Prioridad 0-100">${i.prioridad}</span>
+          </div>
+          <div class="meta">${i.nivelPrioridad} · ${i.cantidadReportes} reporte(s) · ~${i.heridosEstimados} herido(s)${i.hayAtrapados ? ' · <b>personas atrapadas</b>' : ''}</div>
+          ${i.zonaRiesgo ? `<span class="zona" style="--color-zona:${COLOR_ZONA[i.zonaRiesgo.nivel]}">Zona ${i.zonaRiesgo.nivel}: ${esc(i.zonaRiesgo.nombre)}</span>` : ''}
+          ${pintarDesglose(i.desglosePrioridad || {})}
+          <div class="acciones">
+            ${['NUEVO', 'ASIGNADO', 'ATENDIDO'].map((e) => `<button data-accion="${e}" class="${i.estado === e ? 'activo' : ''}">${e[0] + e.slice(1).toLowerCase()}</button>`).join('')}
+          </div>
+        </li>`).join('');
+    }
+
+    function pintarMapa(incidentes, reportes) {
+      capaReportes.clearLayers();
+      for (const r of reportes) {
+        L.circleMarker([r.lat, r.lng], { radius: 2.5, weight: 0, fillOpacity: 0.7, fillColor: '#455a64' }).addTo(capaReportes);
+      }
+      capaIncidentes.clearLayers();
+      marcadores = new Map();
+      for (const i of incidentes) {
+        const c = L.circle([i.lat, i.lng], {
+          radius: Math.max(i.radioMetros, 35),
+          color: COLOR_NIVEL[i.nivelPrioridad],
+          weight: i.id === seleccionado ? 4 : 2,
+          fillOpacity: i.estado === 'ATENDIDO' ? 0.08 : 0.3,
+          dashArray: i.estado === 'ATENDIDO' ? '6 6' : null,
+        }).bindPopup(`<b>${esc(NOMBRE_TIPO[i.tipoPrincipal])}</b> · prioridad ${i.prioridad} (${i.nivelPrioridad})<br>${i.cantidadReportes} reportes · ~${i.heridosEstimados} heridos · ${i.estado}`);
+        c.on('click', () => seleccionar(i.id, false));
+        c.addTo(capaIncidentes);
+        marcadores.set(i.id, c);
+      }
+    }
+
+    function seleccionar(id, mover = true) {
+      seleccionado = id;
+      document.querySelectorAll('li.incidente').forEach((li) => li.classList.toggle('seleccionado', li.dataset.id === id));
+      const m = marcadores.get(id);
+      if (m && mover) { mapa.flyTo(m.getLatLng(), Math.max(mapa.getZoom(), 16), { duration: 0.6 }); m.openPopup(); }
+      document.querySelector(`li[data-id="${id}"]`)?.scrollIntoView({ block: 'nearest' });
+    }
+
+    async function refrescar() {
+      const conexion = document.getElementById('estado-conexion');
+      try {
+        const [resumen, incidentes, reportes] = await Promise.all([
+          pedir('/incidentes/resumen'),
+          pedir('/incidentes' + (filtroEstado ? `?estado=${filtroEstado}` : '')),
+          pedir('/reportes?limite=5000'),
+        ]);
+        document.getElementById('c-reportes').textContent = resumen.reportes;
+        document.getElementById('c-incidentes').textContent = resumen.incidentes;
+        for (const n of ['CRITICA', 'ALTA', 'MEDIA', 'BAJA']) document.getElementById('c-' + n.toLowerCase()).textContent = resumen.porNivel[n];
+        pintarLista(incidentes);
+        pintarMapa(incidentes, reportes);
+        if (primeraCarga && incidentes.length) {
+          mapa.fitBounds(L.featureGroup([...marcadores.values()]).getBounds().pad(0.2));
+          primeraCarga = false;
+        }
+        conexion.textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-SV');
+        conexion.classList.remove('error');
+      } catch (e) {
+        conexion.textContent = 'Sin conexión con la API (' + e.message + ')';
+        conexion.classList.add('error');
+      }
+    }
+
+    document.getElementById('lista').addEventListener('click', async (ev) => {
+      const li = ev.target.closest('li.incidente');
+      if (!li) return;
+      const accion = ev.target.closest('button[data-accion]');
+      if (accion) {
+        await pedir(`/incidentes/${li.dataset.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estado: accion.dataset.accion }),
+        });
+        await refrescar();
+        return;
+      }
+      seleccionar(li.dataset.id);
+    });
+
+    document.querySelector('.filtros').addEventListener('click', (ev) => {
+      const b = ev.target.closest('button[data-estado]');
+      if (!b) return;
+      filtroEstado = b.dataset.estado;
+      document.querySelectorAll('.filtros button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      refrescar();
+    });
+
+    cargarZonas().catch(() => {});
+    refrescar();
+    setInterval(refrescar, REFRESCO_MS);
+  </script>
+</body>
+</html>
