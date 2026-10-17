@@ -4,7 +4,7 @@ Prototipo del equipo UNIVO para el **Rally Latinoamericano de Innovación 2026 �
 
 ![Tablero del COE con incidentes priorizados sobre San Miguel](docs/img/tablero-coe.png)
 
-> **Estado:** el backend (API + base de datos geoespacial + triaje), el simulador de mulas de datos y un tablero mínimo del COE **ya funcionan**. Falta la PWA del ciudadano en Angular, que consume esta misma API ([docs/API.md](docs/API.md)).
+> **Estado:** Backend (NestJS + PostGIS + triaje), simulador de mulas, tablero del COE y la **PWA en Angular con funcionamiento 100% offline** (`frontend/`) están **completos y funcionando**. Consume la API documentada en [docs/API.md](docs/API.md).
 
 ---
 
@@ -61,7 +61,7 @@ flowchart LR
 | Clustering espacial y priorización | ✅ Hecho | PostGIS (`ST_ClusterDBSCAN`, `ST_Intersects`) |
 | Simulador de mulas de datos | ✅ Hecho | `simulator/` — cientos de reportes en lotes, con duplicados entre patrullas |
 | Tablero del COE (mapa + lista priorizada) | ✅ Hecho (mínimo) | `backend/public/index.html`, servido en `http://localhost:3000/` |
-| App del ciudadano (crear reporte offline y sincronizar) | ⏳ Pendiente | PWA en Angular contra [docs/API.md](docs/API.md) |
+| App del ciudadano y recolector (offline PWA) | ✅ Hecho | `frontend/` — Angular PWA con Service Worker, cola local y sync |
 | Transferencia teléfono → teléfono por BLE / Wi-Fi Direct | ❌ Visión | La **simula** el simulador. Desde un navegador no se puede emitir BLE |
 | Mapas reales de susceptibilidad del MARN | ⚠️ Pendiente | Por ahora, 4 zonas **ficticias**, marcadas así en el mapa |
 | Heartbeat de patrullas | ⚠️ Sin implementar | Ver [Preguntas abiertas](#12-preguntas-abiertas-y-limitaciones) |
@@ -93,10 +93,16 @@ pnpm db:seed
 pnpm start:dev
 ```
 
+# 4. Frontend PWA en Angular (en otra terminal)
+cd frontend
+pnpm install
+pnpm start
+```
+
 En otra terminal, desde la raíz del repo:
 
 ```bash
-# 4. Simular 3 patrullas que llegan con ~200 reportes (vacía el tablero antes)
+# 5. Simular 3 patrullas que llegan con ~200 reportes (vacía el tablero antes)
 node simulator/simular.mjs --reset
 ```
 
@@ -104,6 +110,7 @@ Luego abre:
 
 | URL | Qué es |
 |---|---|
+| http://localhost:4200/ | App PWA del ciudadano / mula de datos (offline-first) |
 | http://localhost:3000/ | Tablero del COE |
 | http://localhost:3000/api/docs | Swagger: todos los endpoints, se pueden probar desde el navegador |
 | http://localhost:3000/api/health | Debe responder `{"api":"ok","db":"ok",...}` |
@@ -299,7 +306,7 @@ Sin `TEST_DATABASE_URL`, los tests de integración se saltan automáticamente.
 | Backend + base de datos + triaje | Julio | ✅ Funcionando |
 | Simulador de mulas | Julio | ✅ Funcionando |
 | Tablero del COE | — | ✅ Versión mínima en HTML; se puede rehacer en Angular |
-| PWA del ciudadano (Angular) | _por asignar_ | ⏳ Pendiente |
+| PWA del ciudadano y recolector (Angular) | Equipo Frontend | ✅ Funcionando (`frontend/`) |
 | Presentación / pitch | _por asignar_ | ⏳ Pendiente |
 
 **Regla para no bloquearnos:** el frontend trabaja contra [docs/API.md](docs/API.md). Si alguien necesita cambiar el contrato, lo cambia en un PR junto con el código y avisa.
