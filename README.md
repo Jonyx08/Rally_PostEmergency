@@ -72,7 +72,7 @@ flowchart LR
 
 ### Requisitos
 
-- **Node.js 22 o superior** (lo pide Angular 22) y **pnpm 12** (`npm install -g pnpm`)
+- **Node.js 22.22.3+ o 24.15+** (lo pide Angular 22) y **pnpm 12** (`npm install -g pnpm`)
 - **Docker** con Docker Compose (para PostgreSQL + PostGIS)
 
 ### Pasos
