@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { App } from './app.component';
-import { ReporteService } from './services/reporte.service';
+import { ReporteService } from './core/services/reporte.service';
 
 const storageMock: Record<string, string> = {};
 const mockLocalStorage = {
@@ -53,11 +53,10 @@ describe('App', () => {
     expect(compiled.querySelector('.brand-title')?.textContent).toContain('REDIAL 09');
   });
 
-  it('debe iniciar en modo ciudadano con pestaña nuevo y tipo DERRUMBE', () => {
+  it('debe iniciar en modo ciudadano con pestaña nuevo', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     expect(app.tabActiva()).toBe('nuevo');
-    expect(app.tipoSeleccionado()).toBe('DERRUMBE');
   });
 
   it('debe restringir opciones técnicas al ciudadano y habilitarlas solo en modo patrulla', () => {
@@ -97,19 +96,19 @@ describe('App', () => {
     expect(app.tema()).toBe('light');
   });
 
-  it('debe guardar reportes en la cola local en modo offline', async () => {
+  it('debe actualizar el mensaje de feedback y cerrarlo correctamente', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
-    const servicio = TestBed.inject(ReporteService);
+    expect(app.feedbackMensaje()).toBeNull();
 
-    // Simulamos offline
-    (servicio.isOnline as any).set(false);
+    app.onReportSubmitted({
+      tipo: 'exito',
+      texto: 'Reporte transmitido al COE',
+      reporteId: 'test-uuid-1234',
+    });
+    expect(app.feedbackMensaje()?.texto).toContain('Reporte transmitido al COE');
 
-    await app.enviarReporte();
-
-    expect(servicio.reportes().length).toBe(1);
-    expect(servicio.pendientes().length).toBe(1);
-    expect(servicio.reportes()[0].tipo).toBe('DERRUMBE');
-    expect(servicio.reportes()[0].estadoLocal).toBe('PENDIENTE');
+    app.cerrarFeedback();
+    expect(app.feedbackMensaje()).toBeNull();
   });
 });

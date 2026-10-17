@@ -1,0 +1,113 @@
+<section class="tab-pane">
+  <div class="pane-header">
+    <h2>Modo Recolector: Mula de Datos (Data Mule)</h2>
+    <p class="pane-description">
+      Configuración para vehículos oficiales (PNC, Protección Civil, ambulancias) que transportan físicamente los paquetes de datos desde la Zona Cero hacia el COE.
+    </p>
+  </div>
+
+  <div class="card-box info-box">
+    <h3 class="info-title">Mecánica de Transporte Físico</h3>
+    <div class="mule-steps">
+      <div class="step-item">
+        <span class="step-num">1</span>
+        <div>
+          <b>Ciudadano en Zona Cero:</b> Crea su reporte offline. Queda guardado en su memoria con UUID propio.
+        </div>
+      </div>
+      <div class="step-item">
+        <span class="step-num">2</span>
+        <div>
+          <b>Transferencia en Proximidad:</b> El vehículo recolector pasa a menos de 100m. Los paquetes se transfieren en milisegundos vía BLE/Wi-Fi Direct.
+        </div>
+      </div>
+      <div class="step-item">
+        <span class="step-num">3</span>
+        <div>
+          <b>Descarga Masiva:</b> Al retornar a zona con 4G o Starlink, el vehículo descarga todo el lote vía <code>POST /api/reportes/sync</code>.
+        </div>
+      </div>
+      <div class="step-item">
+        <span class="step-num">4</span>
+        <div>
+          <b>Cerebro de Triaje:</b> PostGIS agrupa duplicados espaciales con <code>ST_ClusterDBSCAN</code> y prioriza recursos.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-box">
+    <label class="form-label">Identificador de la Unidad Recolectora</label>
+    <div class="collector-input-row">
+      <input
+        type="text"
+        class="form-input"
+        [ngModel]="collectorIdInput()"
+        (ngModelChange)="collectorIdInput.set($event)"
+        placeholder="Ej: patrulla-pnc-01, ambulancia-03"
+      />
+      <button
+        type="button"
+        class="btn-primary"
+        (click)="guardarId()"
+      >
+        Guardar ID
+      </button>
+    </div>
+    <small class="hint-text">
+      Este identificador queda registrado en el campo <code>collectorId</code> de la base de datos para trazabilidad del rescate de información.
+    </small>
+  </div>
+
+  <div class="card-box">
+    <h3>Prueba Operativa del Recolector</h3>
+    <p class="hint-text mb-12">
+      Simula el paso por sectores aislados y la descarga posterior en el COE para el jurado.
+    </p>
+
+    <div class="mule-buttons">
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="generarMuestraSimulada()"
+      >
+        Simular Recolección en Ruta (+5 Reportes)
+      </button>
+
+      <button
+        type="button"
+        class="btn-primary"
+        [disabled]="reporteService.pendientes().length === 0 || reporteService.sincronizando()"
+        (click)="sincronizarManual()"
+      >
+        Descargar Carga hacia el COE (Sync)
+      </button>
+    </div>
+
+    @if (reporteService.ultimoResultadoSync(); as res) {
+      <div class="sync-results-box">
+        <h4>Resultado de la Última Descarga al Servidor:</h4>
+        <div class="results-grid">
+          <div class="res-item">
+            <span>Nuevos Insertados:</span>
+            <b>{{ res.insertados }}</b>
+          </div>
+          <div class="res-item">
+            <span>Duplicados Prevenidos:</span>
+            <b>{{ res.duplicados }}</b>
+          </div>
+          <div class="res-item">
+            <span>Rechazados:</span>
+            <b>{{ res.invalidos.length }}</b>
+          </div>
+          @if (res.triaje) {
+            <div class="res-item col-span-2">
+              <span>Incidentes Maestros Calculados:</span>
+              <b>{{ res.triaje.incidentes }} ({{ res.triaje.nuevos }} nuevos)</b>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</section>

@@ -1,0 +1,29 @@
+<div class="feedback-banner" [class]="data.tipo">
+  <div class="feedback-content">
+    <div class="feedback-badge-icon">
+      @if (data.tipo === 'exito') {
+        <svg class="icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      } @else if (data.tipo === 'offline') {
+        <svg class="icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      } @else {
+        <svg class="icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      }
+    </div>
+    <div>
+      <p class="feedback-text">{{ data.texto }}</p>
+      @if (data.reporteId) {
+        <small class="feedback-sub">Identificador de Reporte (UUID): <code>{{ data.reporteId }}</code></small>
+      }
+    </div>
+  </div>
+  <button type="button" class="feedback-close" (click)="close.emit()" title="Cerrar">✕</button>
+</div>

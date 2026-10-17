@@ -1,0 +1,157 @@
+<section class="tab-pane">
+  <div class="pane-header">
+    <h2>
+      {{ reporteService.modo() === 'CIUDADANO' ? 'Mis Reportes de Auxilio' : 'Búfer de Reportes en la Unidad Recolectora' }}
+    </h2>
+    <p class="pane-description">
+      @if (reporteService.modo() === 'CIUDADANO') {
+        Consulta el estado de las alertas generadas desde este teléfono. Si están pendientes, se enviarán en cuanto una patrulla pase cerca o recuperes señal.
+      } @else {
+        Almacenamiento de reportes absorbidos de ciudadanos en ruta o generados por la patrulla. Listos para descarga masiva en el COE.
+      }
+    </p>
+  </div>
+
+  <!-- TARJETAS DE CIFRAS RESUMIDAS -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <span class="metric-label">{{ reporteService.modo() === 'CIUDADANO' ? 'Total Registrados' : 'Total en Búfer' }}</span>
+      <span class="metric-num">{{ reporteService.totalReportes() }}</span>
+    </div>
+    <div class="metric-card warning">
+      <span class="metric-label">{{ reporteService.modo() === 'CIUDADANO' ? 'Esperando Patrulla' : 'Pendientes de Descarga' }}</span>
+      <span class="metric-num">{{ reporteService.pendientes().length }}</span>
+    </div>
+    <div class="metric-card success">
+      <span class="metric-label">{{ reporteService.modo() === 'CIUDADANO' ? 'Recibidos por Rescate' : 'Consolidados en COE' }}</span>
+      <span class="metric-num">{{ reporteService.sincronizados().length }}</span>
+    </div>
+    @if (reporteService.modo() === 'RECOLECTOR') {
+      <div class="metric-card danger">
+        <span class="metric-label">Con Error</span>
+        <span class="metric-num">{{ reporteService.conError().length }}</span>
+      </div>
+    }
+  </div>
+
+  <!-- ACCIONES TÉCNICAS (SOLO EN MODO PATRULLA) -->
+  @if (reporteService.modo() === 'RECOLECTOR') {
+    <div class="actions-bar">
+      <button
+        type="button"
+        class="btn-primary"
+        [disabled]="reporteService.pendientes().length === 0 || reporteService.sincronizando()"
+        (click)="sincronizarLote()"
+      >
+        @if (reporteService.sincronizando()) {
+          <span class="spinner"></span> Sincronizando...
+        } @else {
+          <svg class="icon-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8 M3 3v5h5 M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16 M16 21h5v-5"/>
+          </svg>
+          <span>Descargar Lote hacia el COE</span>
+        }
+      </button>
+
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="generarMuestraSimulada()"
+      >
+        Simular Paso por Comunidad (+5)
+      </button>
+
+      <button
+        type="button"
+        class="btn-danger-outline"
+        [disabled]="reporteService.totalReportes() === 0"
+        (click)="limpiarCola()"
+      >
+        Vaciar Búfer
+      </button>
+    </div>
+  }
+
+  <!-- LISTA DE REPORTES -->
+  <div class="reports-list">
+    @if (reporteService.reportes().length === 0) {
+      <div class="empty-state">
+        <svg class="icon-empty" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+        <h3>
+          {{ reporteService.modo() === 'CIUDADANO' ? 'No has generado solicitudes de auxilio aún' : 'No hay reportes en el búfer de la patrulla' }}
+        </h3>
+        <p>
+          {{ reporteService.modo() === 'CIUDADANO' ? 'Ve a "Pedir Auxilio" si te encuentras en una situación de peligro.' : 'Los reportes absorbidos de ciudadanos o creados en campo aparecerán aquí.' }}
+        </p>
+      </div>
+    } @else {
+      @for (rep of reporteService.reportes(); track rep.id) {
+        <article class="report-card" [class]="rep.estadoLocal.toLowerCase()">
+          <div class="report-card-header">
+            <div class="report-title-row">
+              <span class="report-type-pill">{{ rep.tipo }}</span>
+              <span class="report-status-badge" [class]="rep.estadoLocal.toLowerCase()">
+                @if (rep.estadoLocal === 'PENDIENTE') {
+                  {{ reporteService.modo() === 'CIUDADANO' ? 'Esperando patrulla cercana' : 'Pendiente en unidad' }}
+                } @else if (rep.estadoLocal === 'SINCRONIZADO') {
+                  {{ reporteService.modo() === 'CIUDADANO' ? 'Recibido por equipos de rescate' : 'Consolidado en COE' }}
+                } @else {
+                  Revisar datos
+                }
+              </span>
+            </div>
+            <span class="report-time">{{ rep.createdAt | date:'short' }}</span>
+          </div>
+
+          <div class="report-details">
+            <div class="detail-row">
+              <span class="detail-label">Ubicación:</span>
+              <b>{{ rep.lat }}, {{ rep.lng }}</b>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Heridos:</span>
+              <b>{{ rep.heridos }}</b>
+              <span class="detail-label ml-12">Atrapados:</span>
+              <b [class.text-danger]="rep.personasAtrapadas">{{ rep.personasAtrapadas ? 'SÍ' : 'NO' }}</b>
+            </div>
+            @if (rep.descripcion) {
+              <p class="report-desc">"{{ rep.descripcion }}"</p>
+            }
+            @if (rep.errorMensaje) {
+              <div class="report-error-box">
+                Error: {{ rep.errorMensaje }}
+              </div>
+            }
+          </div>
+
+          <div class="report-card-footer">
+            <code class="uuid-label" title="{{ rep.id }}">Código de reporte: {{ rep.id.slice(0, 8) }}...</code>
+            @if (reporteService.modo() === 'RECOLECTOR') {
+              <div class="card-actions">
+                @if (rep.estadoLocal === 'ERROR' || rep.estadoLocal === 'PENDIENTE') {
+                  <button
+                    type="button"
+                    class="btn-xs"
+                    (click)="reintentar(rep.id)"
+                  >
+                    Reintentar
+                  </button>
+                }
+                <button
+                  type="button"
+                  class="btn-xs-danger"
+                  (click)="eliminar(rep.id)"
+                >
+                  Borrar
+                </button>
+              </div>
+            }
+          </div>
+        </article>
+      }
+    }
+  </div>
+</section>
