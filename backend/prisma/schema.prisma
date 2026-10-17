@@ -1,0 +1,28 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+model Reporte {
+  id                String   @id // El UUID lo genera el frontend (clave de idempotencia)
+  deviceId          String   // Teléfono del ciudadano
+  createdAt         DateTime // Cuándo se creó en el teléfono offline
+  latitud           Float
+  longitud          Float
+  geom              Unsupported("geometry(Point, 4326)")? // Para el triaje espacial
+  tipo              String   // DERRUMBE, INUNDACION, etc.
+  heridos           Int
+  personasAtrapadas Boolean
+  descripcion       String?
+  estado            String   @default("NUEVO")
+  collectorId       String?  // El ID de la mula/patrulla (puede ser null)
+  recibidoEn        DateTime @default(now()) // Cuándo llegó al servidor
+
+  @@index([geom], type: Gist)
+}

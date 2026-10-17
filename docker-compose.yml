@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  db-postgis:
+    image: postgis/postgis:15-3.4
+    container_name: rally-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: rallypassword123
+      POSTGRES_DB: triajedb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+
+volumes:
+  postgis_data:
