@@ -16,7 +16,7 @@ Lo que el equipo todavía no ha decidido, y lo que el jurado probablemente va a 
 ¿Existen públicamente en un formato usable (GeoJSON o shapefile)? Mientras tanto, el seed carga 4 zonas ficticias alrededor de San Miguel, **marcadas como FICTICIAS** en el mapa. Si se consiguen los datos reales, se reemplazan en `backend/prisma/seed.ts`.
 
 ### 3. Responsables
-Falta confirmar quién termina la PWA del ciudadano (Angular) y quién hace la presentación. El backend, el simulador y un tablero mínimo ya existen (ver la tabla de reparto en el README).
+Falta confirmar quién termina la PWA del ciudadano (Angular) y quién hace la presentación. El backend, el simulador y un tablero mínimo ya existen.
 
 ### 4. ¿Hay IA en el producto?
 Ni la propuesta del Notion ni el documento técnico mencionan un componente de IA dentro de la app. Confirmar si se descarta o qué haría.

@@ -19,11 +19,8 @@ Prototipo del equipo UNIVO para el **Rally Latinoamericano de Innovación 2026 �
 7. [Estructura del repositorio](#7-estructura-del-repositorio)
 8. [API](#8-api)
 9. [Tests](#9-tests)
-10. [Guion de la demo](#10-guion-de-la-demo)
-11. [Reparto del trabajo](#11-reparto-del-trabajo)
-12. [Preguntas abiertas y limitaciones](#12-preguntas-abiertas-y-limitaciones)
-13. [Problemas comunes](#13-problemas-comunes)
-14. [Glosario](#14-glosario)
+10. [Problemas comunes](#10-problemas-comunes)
+11. [Glosario](#11-glosario)
 
 ---
 
@@ -64,7 +61,7 @@ flowchart LR
 | App del ciudadano (crear reporte offline y sincronizar) | 🚧 En progreso | `frontend/`: Angular ya configurado como PWA; faltan las pantallas |
 | Transferencia teléfono → teléfono por BLE / Wi-Fi Direct | ❌ Visión | La **simula** el simulador. Desde un navegador no se puede emitir BLE |
 | Mapas reales de susceptibilidad del MARN | ⚠️ Pendiente | Por ahora, 4 zonas **ficticias**, marcadas así en el mapa |
-| Heartbeat de patrullas | ⚠️ Sin implementar | Ver [Preguntas abiertas](#12-preguntas-abiertas-y-limitaciones) |
+| Heartbeat de patrullas | ⚠️ Sin implementar | Ver [docs/PREGUNTAS_ABIERTAS.md](docs/PREGUNTAS_ABIERTAS.md) |
 
 **Por qué la parte BLE es solo visión:** emitir balizas BLE, escanear en segundo plano y usar Wi-Fi Direct son APIs nativas de Android. Una PWA no puede hacerlo (Web Bluetooth no emite anuncios ni escanea en segundo plano, y no existe en Safari de iPhone). En la demo, el simulador representa el viaje del reporte en la patrulla.
 
@@ -290,39 +287,7 @@ TEST_DATABASE_URL="postgresql://postgres:rallypassword123@localhost:5432/triajed
 
 Sin `TEST_DATABASE_URL`, los tests de integración se saltan automáticamente.
 
-## 10. Guion de la demo
-
-1. Antes de empezar: backend corriendo y `curl -X DELETE http://localhost:3000/api/demo/datos` para dejar el tablero vacío. Abrir `http://localhost:3000/`.
-2. *(Cuando exista la PWA)* En un teléfono en modo avión se crean 2–3 reportes: quedan guardados offline. Se reactiva la conexión y aparecen en el tablero.
-3. Correr `node simulador/simular.mjs --pausa 4000`: "llegan" 3 patrullas, una cada 4 segundos, con unos 200 reportes en total, muchos repetidos entre patrullas.
-4. En el tablero, cientos de puntos se convierten en **unos pocos incidentes priorizados**. Los de zona roja o con personas atrapadas quedan arriba, con la barra que explica por qué.
-5. Señalar en la consola del simulador la línea del **reenvío**: 0 nuevos, todos duplicados. Eso demuestra la idempotencia.
-6. Marcar un incidente como `ASIGNADO` desde el tablero y mostrar que no se pierde aunque sigan llegando reportes.
-7. Cierre: explicar la visión de la Fase A (BLE entre teléfonos) como siguiente paso.
-
-## 11. Reparto del trabajo
-
-| Área | Responsable | Estado |
-|---|---|---|
-| Backend + base de datos + triaje | Julio | ✅ Funcionando |
-| Simulador de mulas | Julio | ✅ Funcionando |
-| Tablero del COE | — | ✅ Versión mínima en HTML; se puede rehacer en Angular |
-| PWA del ciudadano (Angular) | Jonathan (estructura inicial) | 🚧 En progreso |
-| Presentación / pitch | _por asignar_ | ⏳ Pendiente |
-
-**Regla para no bloquearnos:** el frontend trabaja contra [docs/API.md](docs/API.md). Si alguien necesita cambiar el contrato, lo cambia en un PR junto con el código y avisa.
-
-## 12. Preguntas abiertas y limitaciones
-
-Detalle y respuestas sugeridas para el jurado en **[docs/PREGUNTAS_ABIERTAS.md](docs/PREGUNTAS_ABIERTAS.md)**.
-
-- **Heartbeat de patrullas:** no está implementado. Tal como estaba propuesto, marcaría como "colapso" a cualquier patrulla que entre a una zona sin señal, que es justo lo que hacen.
-- **Zonas de riesgo ficticias:** hay que reemplazarlas por los mapas del MARN si se consiguen. Se cargan en `prisma/seed.ts`.
-- **Sin autenticación:** cualquiera que alcance la API puede enviar reportes. Es aceptable para la demo, no para producción.
-- **Recalculo completo** en cada sync (ver 6.4).
-- **El tablero necesita internet** para los mapas base de OpenStreetMap. El COE sí tiene conexión; los reportes y el triaje no dependen de eso.
-
-## 13. Problemas comunes
+## 10. Problemas comunes
 
 | Síntoma | Causa probable / solución |
 |---|---|
@@ -334,7 +299,7 @@ Detalle y respuestas sugeridas para el jurado en **[docs/PREGUNTAS_ABIERTAS.md](
 | `DELETE /api/demo/datos` responde 403 | Falta `DEMO_PERMITIR_RESET=true` en `backend/.env` |
 | pnpm falla con `ERR_PNPM_IGNORED_BUILDS` | Una dependencia nueva quiere ejecutar scripts. Agrégala en `allowBuilds` del `pnpm-workspace.yaml` de esa carpeta (`true` o `false`) |
 
-## 14. Glosario
+## 11. Glosario
 
 | Término | Significado |
 |---|---|
